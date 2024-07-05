@@ -1,0 +1,38 @@
+#CODE FOR CONFUSION MATRIX COMPASS ALL SUBGROUPS
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score
+
+# Read the dataset
+df = pd.read_excel("CART_final.xlsx")
+
+# Convert Y to binary
+df['Y'] = df['Y'].apply(lambda y: 1 if y > 0 else 0)
+
+# Get unique races
+unique_races = df['race'].unique()
+
+# Function to plot and print confusion matrix for a given race
+def plot_confusion_matrix_for_race(race):
+    race_df = df[df['race'] == race]
+    y_true = race_df['Y']
+    y_pred = race_df['Pred_compass']
+    cm = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot()
+    plt.title(f'Confusion Matrix for race: {race}')
+    plt.show()
+
+    # Calculate accuracy
+    accuracy = accuracy_score(y_true, y_pred)
+
+    print(f'Confusion Matrix for race: {race}')
+    print(cm)
+    print(f'Accuracy for race {race}: {accuracy}')
+
+# Plot and print confusion matrix for each race
+for race in unique_races:
+    plot_confusion_matrix_for_race(race)
