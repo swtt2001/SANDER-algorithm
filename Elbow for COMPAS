@@ -1,0 +1,38 @@
+#ELBOW for COMPAS
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+df = pd.read_excel("Crime_FD_COM.xlsx")
+df['end'] = df['c_charge_degree'].apply(lambda x: 1 if x == 'F' else 0)
+
+
+df_cluster = df[['age', 'juv_fel_count', 'priors_count', 'end']].copy()
+
+# Define range of k values to test
+k_values = range(1, 11)  # Test for k from 1 to 10 clusters
+# Initialize empty list to store inertias
+inertias = []
+
+# Iterate over each k value
+for k in k_values:
+    # Initialize KMeans clustering with current k value
+    kmeans = KMeans(n_clusters=k, random_state=42)
+
+    # Fit KMeans clustering on the scaled data
+    kmeans.fit(df_cluster)
+
+    # Append inertia (sum of squared distances) to list
+    inertias.append(kmeans.inertia_)
+
+# Plotting the Elbow Curve
+plt.figure(figsize=(8, 6))
+plt.plot(k_values, inertias, marker='o', linestyle='-', color='b')
+plt.title('Elbow Method for Optimal k')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('Sum of Squared Distances (Inertia)')
+plt.xticks(k_values)
+plt.grid(True)
+plt.show()
