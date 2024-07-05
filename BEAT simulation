@@ -1,0 +1,84 @@
+#SIMULATION DATA (BEAT SIMULATION)
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.cluster import KMeans
+
+# Set seed for reproducibility
+np.random.seed(42)
+
+# Number of data points
+num_points = 15000
+
+# Generating normal (Gaussian) distributed variables
+mean1, std_dev1 = 0, 1
+mean2, std_dev2 = 0, 1
+nvar1 = np.random.normal(mean1, std_dev1, num_points)
+nvar2 = np.random.normal(mean2, std_dev2, num_points)
+nvar3 = np.random.normal(0, 1, num_points)
+
+# Generating Bernoulli distributed variables
+prob1 = 0.3
+prob2 = 0.3
+bvar1 = np.random.binomial(1, prob1, num_points)
+bvar2 = np.random.binomial(1, prob2, num_points)
+
+# Calculate probabilities for Bernoulli distribution using logistic transformation
+prob_logistic = 1 / (1 + np.exp(-6 * nvar1))
+
+# Generating Bernoulli distributed variable using calculated probabilities
+bvar3 = np.random.binomial(1, prob_logistic, num_points)
+
+# Generate a new array of random numbers (simulated training data)
+new_data = nvar1
+
+# Compute the values of thao and y for simulation
+thao = np.maximum(new_data, 0) - 0.5 * nvar2 + bvar3
+y = (thao > np.median(thao)).astype(int)  # Binary classification target
+
+# Combine input features into X and target variable into Y
+X = np.column_stack([nvar1, nvar3, bvar1, bvar2, bvar3])
+Y = y
+
+# Splitting the data into training (simulation) and test (estimation) sets
+train_size = 10000  # Number of data points for training (simulation)
+test_size = 5000    # Number of data points for testing (estimation)
+
+X_train = X[:train_size, :4]
+y_train = Y[:train_size]
+X_test = X[train_size: , :4]
+y_test = Y[train_size: ]
+
+# Perform clustering to identify clusters based on attributes in the training set
+kmeans = KMeans(n_clusters=5, random_state=42)
+cluster_labels_train = kmeans.fit_predict(X_train)
+cluster_labels_test = kmeans.predict(X_test)
+
+# Add cluster labels as a new feature to X_train and X_test
+X_train_with_cluster = np.column_stack([X_train, cluster_labels_train])
+X_test_with_cluster = np.column_stack([X_test, cluster_labels_test])
+
+# Train a random forest classifier using X_train_with_cluster and y_train
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train_with_cluster, y_train)
+
+# Predict on the test set
+y_pred = rf.predict(X_test_with_cluster)
+
+# Evaluate the model (classification metrics)
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+
+print(f"Accuracy: {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1-score: {f1:.4f}")
+
+# Evaluate the model using Mean Squared Error (MSE)
+mse = mean_squared_error(y_test, y_pred)
+print(f"Mean Squared Error: {mse:.2f}")
