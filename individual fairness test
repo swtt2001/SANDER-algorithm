@@ -1,0 +1,69 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load the dataframe
+df = pd.read_excel("IF_test_results_QRF.xlsx")
+
+# Sort dataframe by the interval size (0.95 - 0.05) for the old model
+df['old_interval_size'] = df['old_0.95'] - df['old_0.05']
+df_sorted = df.sort_values(by='old_interval_size')
+
+# Create the plot
+fig, ax = plt.subplots(figsize=(15, 7))
+
+# Define the number of rows
+rows = df_sorted.shape[0]
+x = np.arange(rows)
+
+# Plot the data
+for i in range(rows):
+    old_0_05 = df_sorted['old_0.05'].iloc[i]
+    old_0_95 = df_sorted['old_0.95'].iloc[i]
+    new_0_05 = df_sorted['new_0.05'].iloc[i]
+    new_0_95 = df_sorted['new_0.95'].iloc[i]
+
+    # Shade overlapping areas
+    overlap_start = max(old_0_05, new_0_05)
+    overlap_end = min(old_0_95, new_0_95)
+
+    if overlap_start < overlap_end:
+        ax.plot([x[i], x[i]], [overlap_start, overlap_end], color='gray', linewidth=5, alpha=0.5)
+
+    # Draw bright red lines for non-overlapping areas
+    if new_0_05 > old_0_95:
+        ax.plot([x[i], x[i]], [old_0_95, new_0_05], color='red', linewidth=2)
+    elif old_0_05 > new_0_95:
+        ax.plot([x[i], x[i]], [new_0_95, old_0_05], color='red', linewidth=2)
+    else:
+        if old_0_05 < new_0_05:
+            ax.plot([x[i], x[i]], [old_0_05, new_0_05], color='red', linewidth=2)
+        if old_0_95 > new_0_95:
+            ax.plot([x[i], x[i]], [new_0_95, old_0_95], color='red', linewidth=2)
+
+# Plot the median points, only if they are different
+for i in range(rows):
+    if df_sorted['old_0.5'].iloc[i] != df_sorted['new_0.5'].iloc[i]:
+        ax.plot(x[i], df_sorted['old_0.5'].iloc[i], 'o', color='gray', label='Median (Old)' if i == 0 else "")
+        ax.plot(x[i], df_sorted['new_0.5'].iloc[i], 'o', color='red', label='Median (New)' if i == 0 else "")
+
+# Add some text for labels, title and custom x-axis tick labels, etc.
+ax.set_xlabel('Individual Counterfactual Test Set', fontsize=14)
+ax.set_ylabel('Quantile Scores', fontsize=14)
+ax.set_title('Quantile Scores for Old and New Models', fontsize=16)
+ax.set_xticks(x)
+ax.set_xticklabels(np.arange(1, rows + 1), fontsize=12)  # Assuming the first index is 1, adjust if necessary
+ax.tick_params(axis='y', labelsize=12)
+
+# Create a custom legend
+handles = [
+    plt.Line2D([0], [0], color='gray', marker='o', linestyle='None', label='Median (Old)'),
+    plt.Line2D([0], [0], color='red', marker='o', linestyle='None', label='Median (New)'),
+    plt.Line2D([0], [0], color='red', lw=2, label='Non-overlapping area'),
+    plt.Line2D([0], [0], color='gray', lw=5, alpha=0.5, label='Overlapping area')
+]
+ax.legend(handles=handles, fontsize=12)
+
+# Show the plot
+plt.tight_layout()
+plt.show()
