@@ -1,0 +1,49 @@
+# Read the datasets
+df = pd.read_excel("QRF_final.xlsx")
+df2 = pd.read_excel("CART_final.xlsx")
+
+
+# Function to calculate TPR and FPR for a given dataframe
+def calculate_roc(df, decile_column, label_column='Y'):
+    decile_scores = df[decile_column].values
+    true_labels = df[label_column].apply(lambda y: 1 if y > 0 else 0).values
+
+    thresholds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    tpr_values = []
+    fpr_values = []
+
+    for threshold in thresholds:
+        # Predict positive (1) if decile score >= threshold, else negative (0)
+        predictions = [1 if score >= threshold else 0 for score in decile_scores]
+
+        # Calculate TP, FP, TN, FN
+        TP = sum((pred == 1 and true == 1) for pred, true in zip(predictions, true_labels))
+        FP = sum((pred == 1 and true == 0) for pred, true in zip(predictions, true_labels))
+        TN = sum((pred == 0 and true == 0) for pred, true in zip(predictions, true_labels))
+        FN = sum((pred == 0 and true == 1) for pred, true in zip(predictions, true_labels))
+
+        # Calculate TPR and FPR
+        TPR = TP / (TP + FN) if (TP + FN) > 0 else 0
+        FPR = FP / (FP + TN) if (FP + TN) > 0 else 0
+
+        tpr_values.append(TPR)
+        fpr_values.append(FPR)
+
+    return fpr_values, tpr_values
+
+# Calculate ROC for both dataframes
+fpr_values_df, tpr_values_df = calculate_roc(df, 'quantile= 0.5')
+fpr_values_df3, tpr_values_df = calculate_roc(df, 'decile_score.1')
+fpr_values_df2, tpr_values_df2 = calculate_roc(df2, 'decile_score.1')
+
+# Plot the ROC curves
+plt.figure()
+plt.plot(fpr_values_df, tpr_values_df, marker='o', label='COMPAS ROC Curve')
+plt.plot(fpr_values_df2, tpr_values_df2, marker='o', label='SANDER ROC Curve')
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y = x (Random Chance)')
+plt.xlabel('False Positive Rate (FPR)')
+plt.ylabel('True Positive Rate (TPR)')
+plt.title('ROC Curve Comparison')
+plt.legend()
+plt.grid()
+plt.show()
